@@ -45,7 +45,7 @@
 		00E356F11AD99517003FC87E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		00E356F21AD99517003FC87E /* mahlmannTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = mahlmannTests.m; sourceTree = "<group>"; };
 		090404254D588FB552C5A083 /* Pods-mahlmann-tvOS.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-mahlmann-tvOS.release.xcconfig"; path = "Target Support Files/Pods-mahlmann-tvOS/Pods-mahlmann-tvOS.release.xcconfig"; sourceTree = "<group>"; };
-		13B07F961A680F5B00A75B9A /* mahlmannapp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = mahlmannapp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07F961A680F5B00A75B9A /* Feldmanagement.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Feldmanagement.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FAF1A68108700A75B9A /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AppDelegate.h; path = mahlmann/AppDelegate.h; sourceTree = "<group>"; };
 		13B07FB01A68108700A75B9A /* AppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = AppDelegate.m; path = mahlmann/AppDelegate.m; sourceTree = "<group>"; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = mahlmann/Images.xcassets; sourceTree = "<group>"; };
@@ -174,7 +174,7 @@
 		83CBBA001A601CBA00E9B192 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				13B07F961A680F5B00A75B9A /* mahlmannapp.app */,
+				13B07F961A680F5B00A75B9A /* Feldmanagement.app */,
 				00E356EE1AD99517003FC87E /* mahlmannTests.xctest */,
 				2D02E47B1E0B4A5D006451C7 /* mahlmann-tvOS.app */,
 				2D02E4901E0B4A5D006451C7 /* mahlmann-tvOSTests.xctest */,
@@ -238,7 +238,7 @@
 			);
 			name = mahlmann;
 			productName = mahlmann;
-			productReference = 13B07F961A680F5B00A75B9A /* mahlmannapp.app */;
+			productReference = 13B07F961A680F5B00A75B9A /* Feldmanagement.app */;
 			productType = "com.apple.product-type.application";
 		};
 		2D02E47A1E0B4A5D006451C7 /* mahlmann-tvOS */ = {
@@ -728,7 +728,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = 1.0.2;
+				CURRENT_PROJECT_VERSION = 1.0.6;
 				DEVELOPMENT_TEAM = 5AS229VVL4;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = mahlmann/Info.plist;
@@ -740,7 +740,7 @@
 					"-lc++",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = mahlmann.app;
-				PRODUCT_NAME = mahlmannapp;
+				PRODUCT_NAME = Feldmanagement;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -754,7 +754,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = 1.0.2;
+				CURRENT_PROJECT_VERSION = 1.0.6;
 				DEVELOPMENT_TEAM = 5AS229VVL4;
 				INFOPLIST_FILE = mahlmann/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 12.4;
@@ -765,7 +765,7 @@
 					"-lc++",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = mahlmann.app;
-				PRODUCT_NAME = mahlmannapp;
+				PRODUCT_NAME = Feldmanagement;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 				VERSIONING_SYSTEM = "apple-generic";

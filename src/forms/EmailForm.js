@@ -20,7 +20,7 @@ const EmailForm = ({ buttonText, onSubmit, children, onAuthentication }) => {
           });
           onAuthentication();
         } else {
-          setErrorMessage('Invalid Email or Password.');
+          setErrorMessage('Invalid E-mail or Passwort.');
         }
       })
   };
@@ -32,12 +32,14 @@ const EmailForm = ({ buttonText, onSubmit, children, onAuthentication }) => {
         onChangeText={(text) => onChangeEmail(text)}
         value={email}
         keyboardType="email-address"
+        placeholder="E-Mail"
       />
       <TextInput
         style={styles.input}
         onChangeText={(text) => onChangePassword(text)}
         value={password}
         secureTextEntry
+        placeholder="Passwort"
       />
       <Button title={buttonText} onPress={submit} />
       {errorMessage ? <Text>{errorMessage}</Text> : null}

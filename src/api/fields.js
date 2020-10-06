@@ -10,9 +10,9 @@ export const createComment = async (fieldId, text) => {
   })
 };
 
-export const setField = async (userIds, fieldIds) => {
+export const setField = async (name, fieldIds) => {
   return post('/fields/set_fields', {
-    userIds, fieldIds,
+    name, fieldIds,
   })
 };
 

@@ -4,6 +4,7 @@ import { createAppContainer, createSwitchNavigator } from 'react-navigation'
 import { createDrawerNavigator } from 'react-navigation-drawer' // import drawer nav
 import { createBottomTabNavigator } from 'react-navigation-tabs'
 import { createStackNavigator } from 'react-navigation-stack'
+import FlashMessage from "react-native-flash-message";
 
 import Login from './components/Login'
 import AuthLoading from './components/AuthLoading'
@@ -38,6 +39,7 @@ class App extends React.Component {
   render() {
     return (
       <SafeAreaView style={styles.container}>
+        <FlashMessage position="top" />
         <AppNavigator />
       </SafeAreaView>
     )

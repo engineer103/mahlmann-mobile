@@ -18,6 +18,7 @@ import MapView, {
   PROVIDER_GOOGLE
 } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
+import { showMessage, hideMessage } from "react-native-flash-message";
 
 import Geolocation from 'react-native-geolocation-service';
 import { getFields, createComment, setField, getComments, getGroups } from '../api/fields';
@@ -38,7 +39,8 @@ class Home extends React.Component {
     super(props);
 
     this.state = {
-      region: {
+      region: {},
+      initialMapRegion: {
         latitude: LATITUDE,
         longitude: LONGITUDE,
         latitudeDelta: LATITUDE_DELTA,
@@ -51,15 +53,13 @@ class Home extends React.Component {
       fields: [],
       users: [], 
       hasLoadedFields: false, 
-      fieldLoadingErrorMessage: '', 
-      initialRegion: {}, 
+      fieldLoadingErrorMessage: '',
       currentField: {}, 
       selectedRegion: null,
       showFieldWindow: true,
       grouping: false,
       showSetWindow: false,
       fieldsGroup: [],
-      setUserIds: [],
       showSearchWindow: false,
       showInboxWindow: false,
       searchedFields: [],
@@ -69,6 +69,9 @@ class Home extends React.Component {
       fieldComments: [],
       inboxGroups: [],
       selectedAreaSize: null,
+      driverLocation: {},
+      hasDriverLocation: false,
+      setName: null,
     };
   }
 
@@ -117,24 +120,42 @@ class Home extends React.Component {
     this.loadFields();
     this.checkAdminUser();
     // if (hasLocationPermission) {
-      // Geolocation.getCurrentPosition(
-      //     (position) => {
-      //       console.log(position);
-      //       this.setState({
-      //         initialRegion: {
-      //           latitude: position.coords.latitude,
-      //           longitude: position.coords.longitude,
-      //           latitudeDelta: 0.0922,
-      //           longitudeDelta: 0.0421,
-      //         },
-      //       });
-      //     },
-      //     (error) => {
-      //       // See error code charts below.
-      //       console.log(error.code, error.message);
-      //     },
-      //     { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-      // );
+      Geolocation.getCurrentPosition(
+          (position) => {
+            console.log(position);
+            this.setState({
+              region: {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                latitudeDelta: 0.0922,
+                longitudeDelta: 0.0421,
+              },
+            });
+
+            this.setState({
+              initialMapRegion: this.state.region,
+            });
+          },
+          (error) => {
+            // See error code charts below.
+            console.log(error.code, error.message);
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+      );
+
+      Geolocation.watchPosition(
+        (position) => {
+          this.setState({
+            driverLocation: {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421,
+            },
+            hasDriverLocation: true,
+          });
+        });
+
     // }
   }
 
@@ -187,7 +208,7 @@ class Home extends React.Component {
   getColorByIndex(field) {
     let color = 'green';
     if (this.state.searchedFields.indexOf(field) != -1) {
-      color = 'yellow';
+      color = 'orange';
     }
     if (this.state.inboxFields.indexOf(field) != -1) {
       color = 'purple';
@@ -209,6 +230,8 @@ class Home extends React.Component {
     if (this.state.measuringStatus) {
       this.setState({
         measuringStatus: false,
+        measuring: null,
+        selectedAreaSize: null,
       });
     } else {
       this.setState({
@@ -258,6 +281,9 @@ class Home extends React.Component {
         this.setState({
           selectedRegion: field,
           showFieldWindow: true,
+          showSetWindow: false,
+          showSearchWindow: false,
+          showInboxWindow: false,
         });
 
         getComments(field.id)
@@ -288,9 +314,11 @@ class Home extends React.Component {
 
     createComment(selectedRegion.id, text)
       .then((res) => {
-        this.setState({
-          fieldComments: [...fieldComments, res],
-        });
+        if (res.status == 'success') {
+          this.setState({
+            fieldComments: [...fieldComments, res.body],
+          });
+        }
       }
     )
 
@@ -303,6 +331,9 @@ class Home extends React.Component {
       this.setState({
         grouping: false,
         showSetWindow: true,
+        showFieldWindow: false,
+        showSearchWindow: false,
+        showInboxWindow: false,
       });
     } else {
       this.setState({
@@ -313,32 +344,29 @@ class Home extends React.Component {
     }
   }
 
-  onChangeCheckbox(checked, user) {
-    let userIds = this.state.setUserIds;
-
-    if (checked && this.state.setUserIds.indexOf(user.id) == -1) {
-      userIds.push(user.id)
-      this.setState({
-        setUserIds: userIds,
-      });
-    } else if (!checked) {
-      userIds.splice(userIds.indexOf(user.id), 1)
-      this.setState({
-        setUserIds: userIds,
-      });
-    }
+  handleSetName(name) {
+    this.setState({
+      setName: name
+    })
   }
 
   setSubmit() {
     let fieldIds = this.state.fieldsGroup.map(fg => (fg.id))
-    setField(this.state.setUserIds, fieldIds)
+    setField(this.state.setName, fieldIds)
       .then((res) => {
         this.setState({
           showSetWindow: false,
           fieldsGroup: [],
         })
+
+        showMessage({
+          message: "Der Satz wurde erfolgreich erstellt.",
+          type: "success",
+        });
       }
     )
+
+    this.setNameTextInput.clear();
   }
 
   cancelSet() {
@@ -357,6 +385,9 @@ class Home extends React.Component {
     } else {
       this.setState({
         showSearchWindow: true,
+        showFieldWindow: false,
+        showSetWindow: false,
+        showInboxWindow: false,
       })
     }
   }
@@ -369,12 +400,17 @@ class Home extends React.Component {
     } else {
       this.setState({
         showInboxWindow: true,
+        showFieldWindow: false,
+        showSetWindow: false,
+        showSearchWindow: false,
       })
 
       getGroups()
         .then((res) => {
+          console.log('step 1')
+          console.log(res)
           this.setState({
-            inboxGroups: res.groupIds
+            inboxGroups: res.groups
           });
         }
       )
@@ -385,14 +421,30 @@ class Home extends React.Component {
     let result = []
 
     this.state.fields.map((field) => {
-      if (field.name.toLowerCase().search(text.toLowerCase().trim()) > 0) {
+      if (field.name.toLowerCase().search(text.toLowerCase().trim()) != -1) {
         result.push(field)
       }
     })
 
     this.setState({
       searchedFields: result,
+      showSearchWindow: false,
     });
+
+    if (result.length > 0) {
+      let field = result[0]
+
+      this.map.animateToRegion({
+        ...this.state.initialMapRegion,
+        latitude: field.coordinates[0].latitude,
+        longitude: field.coordinates[0].longitude,
+      })
+    } else {
+      showMessage({
+        message: "Die Suche ergab keinen Treffer.",
+        type: "error",
+      });
+    }
   }
 
   renderInboxField(fieldIds) {
@@ -424,45 +476,90 @@ class Home extends React.Component {
     }
   }
 
+  removeSelectedAreaPoint() {
+    let coordinates = [...this.state.measuring.coordinates]
+    coordinates.splice(-1)
+
+    this.setState({
+      measuring: {
+        ...this.state.measuring,
+        coordinates: coordinates,
+      },
+    });
+
+    if (coordinates.length > 2) {
+      this.setState({
+        selectedAreaSize: this.calculateAreaSize(coordinates)
+      })
+    } else {
+      this.setState({
+        selectedAreaSize: null,
+      })
+    }
+  }
 
   render() {
-    const { fields, fieldLoadingErrorMessage, initialRegion,  hasLoadedFields } = this.state;
+    const { fields, fieldLoadingErrorMessage, region, initialMapRegion, measuring, hasLoadedFields, hasDriverLocation } = this.state;
 
     const mapOptions = {
       scrollEnabled: true,
     };
 
-    if (this.state.measuring) {
+    if (this.state.measuringStatus) {
       mapOptions.scrollEnabled = false;
       // mapOptions.onPanDrag = e => this.onPress(e);
     }
+
+    let measuring_coordinates = (measuring && measuring.coordinates) || []
 
     if (hasLoadedFields) {
       return (
         <View style={styles.container}>
           <MapView
+            ref={map => {this.map = map}}
             provider={this.props.provider}
             // provider={PROVIDER_GOOGLE}
             style={styles.map}
-            initialRegion={this.state.region}
+            initialRegion={initialMapRegion}
             // mapType='satellite'
             showsUserLocation={true}
             onPress={e => this.onMapPress(e)}
             {...mapOptions}
           >
-            <Marker
-              coordinate={this.state.region}
-            />
+            {region.latitude && (
+              <Marker
+                coordinate={region}
+              />
+            )}
+            {this.state.hasDriverLocation && (
+              <Marker
+                coordinate={this.state.driverLocation}
+              />
+            )}
             {fields.map((field) => (
               <Polygon
                 coordinates={field.coordinates}
                 fillColor={this.getColorByIndex(field)}
-                strokeColor={this.getColorByIndex(field)}
-                strokeWidth={2}
+                strokeColor='lightblue'
+                strokeWidth={4}
                 key={field.id}
                 tappable={true}
                 onPress={(e) => this.onPolygonPress(e, field)}
               />
+            ))}
+            {fields.map((field) => (
+              <Marker 
+                coordinate={field.coordinates[0]}
+                key={field.id}
+              >
+                <Text
+                  note
+                  style={{color:"#000", fontSize: 12}}
+                  key={field.id}
+                >
+                  {field.name + '(' + field.area_size + ' ha)'}
+                </Text>
+              </Marker>
             ))}
             {this.state.polygons.map(polygon => (
               <Polygon
@@ -482,9 +579,16 @@ class Home extends React.Component {
                 strokeWidth={1}
               />
             )}
+            {measuring_coordinates.map(coordinate => (
+              <Marker
+                key={coordinate.latitude + '-' + coordinate.longitude}
+                coordinate={coordinate}
+              />
+            ))}
             {this.state.selectedRegion && this.state.showRoute && (
               <MapViewDirections
-                origin={{latitude: 52.8246310, longitude: 8.1316168}}
+                // origin={{latitude: 52.8246310, longitude: 8.1316168}}
+                origin={region}
                 destination={this.state.selectedRegion.coordinates[0]}
                 apikey={GOOGLE_MAPS_API_KEY}
                 strokeWidth={3}
@@ -513,14 +617,12 @@ class Home extends React.Component {
             >
               <Text>Felder suchen</Text>
             </TouchableOpacity>
-            {!this.state.admin && (
-              <TouchableOpacity
-                onPress={() => this.onInboxTouchable()}
-                style={[styles.bubble, styles.button]}
-              >
-                <Text>Satz Inbox</Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              onPress={() => this.onInboxTouchable()}
+              style={[styles.bubble, styles.button]}
+            >
+              <Text>Satz Inbox</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={this.logOut}
               style={[styles.bubble, styles.button]}
@@ -528,105 +630,108 @@ class Home extends React.Component {
               <Text>Ausloggen</Text>
             </TouchableOpacity>
           </View>
-          <ScrollView style={styles.fieldWindow}>
-            {this.state.selectedRegion && this.state.showFieldWindow && (
-              <TouchableOpacity
+          {this.state.selectedRegion && this.state.showFieldWindow && (
+            <View style={styles.metaInfoWindow}>
+              <Button
+                title={this.state.showRoute ? 'Route ausblenden' : 'Route anzeigen'}
+                onPress={ () => this.toggleRoute() }
+              />
+              <View style={styles.metaMainView}>
+                <Text style={styles.metaTagName}>Name: <Text style={styles.metaTagContent}>{this.state.selectedRegion.name}</Text></Text>
+                <Text style={styles.metaTagName}>Status: <Text style={styles.metaTagContent}>{this.state.selectedRegion.status}</Text></Text>
+                <Text style={styles.metaTagName}>Kohlfähigkeit: <Text style={styles.metaTagContent}>{this.state.selectedRegion.is_cabbage}</Text></Text>
+                <Text style={styles.metaTagName}>Fläche: <Text style={styles.metaTagContent}>{this.state.selectedRegion.area_size} ha</Text></Text>
+              </View>
+              <Text style={{color: 'gray'}}>Comments</Text>
+              <View style={{height: 80}} >
+                <ScrollView>
+                  {this.state.fieldComments.map(comment => (
+                    <Text key={comment.id}>{comment.user}: {comment.text}</Text>
+                  ))}
+                </ScrollView>
+              </View>
+              <TextInput
+                style={[styles.textInput]}
+                ref={input => { this.commentTextInput = input }}
+                clearButtonMode="always"
+                placeholder="Comment"
+                onSubmitEditing={ (event) => this.commentSubmit(event.nativeEvent.text) }
+              />
+              <Button
+                title='Schließen'
                 onPress={() => this.closeFieldWindow()}
-                style={[styles.bubble]}
-              >
-                <Button
-                  title={this.state.showRoute ? 'Route ausblenden' : 'Route anzeigen'}
-                  onPress={ () => this.toggleRoute() } 
-                />
-                <Text>Name: {this.state.selectedRegion.name}</Text>
-                <Text>Status: {this.state.selectedRegion.status}</Text>
-                <Text>Kohlfähigkeit: {this.state.selectedRegion.is_cabbage}</Text>
-                <Text>Fläche: {this.state.selectedRegion.area_size} ha</Text>
-                {this.state.fieldComments.map(comment => (
-                  <Text key={comment.id}>{comment.user}: {comment.text}</Text>
-                ))}
-                <TextInput
-                  style={[styles.textInput]}
-                  ref={input => { this.commentTextInput = input }}
-                  clearButtonMode="always"
-                  onSubmitEditing={ (event) => this.commentSubmit(event.nativeEvent.text) } 
-                />
-              </TouchableOpacity>
-            )}
-          </ScrollView>
-          <ScrollView style={styles.fieldWindow}>
-            {!this.state.grouping && this.state.showSetWindow && (
-              <TouchableOpacity
-                // onPress={() => this.closeSetWindow()}
-                style={[styles.bubble]}
-              >
-                {this.state.users.map(user => (
-                  <View
-                    style={styles.checkboxContainer}
-                    key={'checkbox-container-' + user.id}
-                  >
-                    <CheckBox
-                      style={styles.checkbox}
-                      key={'checkbox-' + user.id}
-                      onValueChange={(e) => this.onChangeCheckbox(e, user)}
-                    />
-                    <Text
-                      style={styles.label}
-                      key={'checkbox-label-' + user.id}
-                    >{user.email}</Text>
-                  </View>
-                ))}
-                <Button
-                  title="Satz versenden"
-                  onPress={ () => this.setSubmit() } 
-                />
-                <Button
-                  title="Abbrechen"
-                  onPress={ () => this.cancelSet() } 
-                />
-              </TouchableOpacity>
-            )}
-          </ScrollView>
-          <View style={styles.fieldWindow}>
+              />
+            </View>
+          )}
+          {!this.state.grouping && this.state.showSetWindow && (
+            <View style={styles.metaInfoWindow}>
+              <TextInput
+                style={[styles.textInput]}
+                clearButtonMode="always"
+                placeholder="Name"
+                ref={input => { this.setNameTextInput = input }}
+                onChangeText={(name) => this.handleSetName(name)}
+              />
+              <Button
+                title="Satz versenden"
+                onPress={ () => this.setSubmit() } 
+              />
+              <Button
+                title="Abbrechen"
+                onPress={ () => this.cancelSet() } 
+              />
+            </View>
+          )}
+          <View style={styles.searchWindow}>
             {this.state.showSearchWindow && (
               <TouchableOpacity
                 style={[styles.bubble]}
               >
                 <TextInput
                   style={styles.searchText}
+                  placeholder="Suche"
                   onSubmitEditing={ (event) => this.searchSubmit(event.nativeEvent.text) } 
                 />
               </TouchableOpacity>
             )}
           </View>
-          <ScrollView style={styles.fieldWindow}>
-            {this.state.showInboxWindow && (
-              <TouchableOpacity
-                style={[styles.bubble]}
-              >
-                {this.state.inboxFieldGropupIds.length == 0 && (
-                  <Text>No sets.</Text>
-                )}
-                {this.state.inboxGroups.map((fieldGroup, index) => (
-                  <Text
-                    key={'fieldgroup-' + index}
-                    onPress={() => this.renderInboxField(fieldGroup)}
-                  >
-                    Satz-{index+1}
-                  </Text>
-                ))}
-              </TouchableOpacity>
+          {this.state.showInboxWindow && (
+            <ScrollView style={styles.metaInfoWindow}>
+              {this.state.inboxFieldGropupIds.length == 0 && (
+                <Text>No sets.</Text>
+              )}
+              {this.state.inboxGroups.map((fieldGroup, index) => (
+                <Text
+                  key={fieldGroup.id}
+                  onPress={() => this.renderInboxField(fieldGroup.fieldIds)}
+                  style={{margin: 8}}
+                >
+                  {fieldGroup.name}
+                </Text>
+              ))}
+            </ScrollView>
+          )}
+          <View style={styles.buttonContainer}>
+            {this.state.selectedAreaSize && (
+              <View>
+                <TouchableOpacity
+                  style={[styles.bubble, styles.infoButton]}
+                >
+                  <Text>{this.state.selectedAreaSize} ha</Text>
+                </TouchableOpacity>
+              </View>
             )}
-          </ScrollView>
-          {this.state.selectedAreaSize && (
-            <View>
-              <TouchableOpacity
-                style={[styles.bubble, styles.infoButton]}
-              >
-                <Text>{this.state.selectedAreaSize} ha</Text>
-              </TouchableOpacity>
-            </View>
+            {measuring_coordinates.length > 0 && (
+              <View>
+                <TouchableOpacity
+                  onPress={() => this.removeSelectedAreaPoint()}
+                  style={[styles.bubble, styles.button]}
+                >
+                  <Text>Zurück</Text>
+                </TouchableOpacity>
+              </View>
             )}
+          </View>
         </View>
       );  
     } else {
@@ -689,7 +794,7 @@ const styles = StyleSheet.create({
     margin: 8,
   },
   searchWindow: {
-    flex: 1,
+    flex: 2,
   },
   searchText: {
     height: 30,
@@ -698,9 +803,26 @@ const styles = StyleSheet.create({
     width: 200
   },
   textInput: {
-    height: 20,
+    height: 30,
     borderColor: 'gray',
-    borderWidth: 1
+    borderWidth: 1,
+    margin: 8
+  },
+  metaInfoWindow: {
+    backgroundColor: 'white',
+    padding: 16
+  },
+  metaMainView: {
+    margin: 8,
+  },
+  commentView: {
+    height: 30,
+  },
+  metaTagName: {
+    color: 'gray'
+  },
+  metaTagContent: {
+    color: 'black'
   },
 });
 
