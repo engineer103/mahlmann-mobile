@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, Button, Text } from 'react-native';
+import { ScrollView, View, StyleSheet, TextInput, Button, Text } from 'react-native';
 import { setToken } from '../api/token';
 import { loginGet } from '../api/authentication';
 
@@ -27,19 +27,19 @@ const EmailForm = ({ buttonText, onSubmit, children, onAuthentication }) => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.label}>E-Mail</Text>
       <TextInput
         style={styles.input}
         onChangeText={(text) => onChangeEmail(text)}
         value={email}
         keyboardType="email-address"
-        placeholder="E-Mail"
       />
+      <Text style={styles.label}>Passwort</Text>
       <TextInput
         style={styles.input}
         onChangeText={(text) => onChangePassword(text)}
         value={password}
         secureTextEntry
-        placeholder="Passwort"
       />
       <Button title={buttonText} onPress={submit} />
       {errorMessage ? <Text>{errorMessage}</Text> : null}
@@ -59,7 +59,9 @@ const styles = StyleSheet.create({
     width: 300,
     borderColor: 'gray',
     borderWidth: 1,
-    marginTop: 20,
+  },
+  label: {
+    marginTop: 8,
   },
 });
 

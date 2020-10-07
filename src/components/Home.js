@@ -30,7 +30,7 @@ const { width, height } = Dimensions.get('window');
 const ASPECT_RATIO = width / height;
 const LATITUDE = 52.8246310;
 const LONGITUDE = 8.1316168;
-const LATITUDE_DELTA = 0.0922;
+const LATITUDE_DELTA = 0.02;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 let id = 0;
 
@@ -72,6 +72,7 @@ class Home extends React.Component {
       driverLocation: {},
       hasDriverLocation: false,
       setName: null,
+      showFieldLabel: true,
     };
   }
 
@@ -498,6 +499,18 @@ class Home extends React.Component {
     }
   }
 
+  onRegionChangeComplete(region) {
+    if (region.latitudeDelta <= 0.021) {
+      this.setState({
+        showFieldLabel: true
+      })
+    } else {
+      this.setState({
+        showFieldLabel: false
+      })
+    }
+  }
+
   render() {
     const { fields, fieldLoadingErrorMessage, region, initialMapRegion, measuring, hasLoadedFields, hasDriverLocation } = this.state;
 
@@ -506,7 +519,7 @@ class Home extends React.Component {
     };
 
     if (this.state.measuringStatus) {
-      mapOptions.scrollEnabled = false;
+      // mapOptions.scrollEnabled = false;
       // mapOptions.onPanDrag = e => this.onPress(e);
     }
 
@@ -524,6 +537,8 @@ class Home extends React.Component {
             // mapType='satellite'
             showsUserLocation={true}
             onPress={e => this.onMapPress(e)}
+            zoomControlEnabled={true}
+            onRegionChangeComplete={(region)=>this.onRegionChangeComplete(region)}
             {...mapOptions}
           >
             {region.latitude && (
@@ -547,7 +562,7 @@ class Home extends React.Component {
                 onPress={(e) => this.onPolygonPress(e, field)}
               />
             ))}
-            {fields.map((field) => (
+            {this.state.showFieldLabel && fields.map((field) => (
               <Marker 
                 coordinate={field.coordinates[0]}
                 key={field.id}
