@@ -697,7 +697,7 @@ class Home extends React.Component {
           </View>
           {this.state.showInboxWindow && (
             <ScrollView style={styles.metaInfoWindow}>
-              {this.state.inboxFieldGropupIds.length == 0 && (
+              {this.state.inboxGroups.length == 0 && (
                 <Text>No sets.</Text>
               )}
               {this.state.inboxGroups.map((fieldGroup, index) => (
