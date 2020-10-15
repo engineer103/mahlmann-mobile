@@ -408,8 +408,6 @@ class Home extends React.Component {
 
       getGroups()
         .then((res) => {
-          console.log('step 1')
-          console.log(res)
           this.setState({
             inboxGroups: res.groups
           });
@@ -507,6 +505,18 @@ class Home extends React.Component {
     } else {
       this.setState({
         showFieldLabel: false
+      })
+    }
+  }
+
+  backCurrentLocation() {
+    if (this.state.hasDriverLocation) {
+      this.map.animateToRegion({
+        ...this.state.driverLocation,
+      })
+    } else {
+      this.map.animateToRegion({
+        ...this.state.initialMapRegion,
       })
     }
   }
@@ -727,6 +737,12 @@ class Home extends React.Component {
             </ScrollView>
           )}
           <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              onPress={() => this.backCurrentLocation()}
+              style={[styles.bubble, styles.button]}
+            >
+              <Text>Aktuelle Position</Text>
+            </TouchableOpacity>
             {this.state.selectedAreaSize && (
               <View>
                 <TouchableOpacity
