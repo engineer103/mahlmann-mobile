@@ -7,7 +7,9 @@ import {
   ScrollView,
   Button,
   Dimensions,
-  TouchableOpacity
+  TouchableOpacity,
+  Image,
+  Linking
 } from "react-native";
 import CheckBox from '@react-native-community/checkbox';
 import MapView, {
@@ -65,7 +67,6 @@ class Home extends React.Component {
       searchedFields: [],
       inboxFieldGropupIds: [],
       inboxFields: [],
-      showRoute: false,
       fieldComments: [],
       inboxGroups: [],
       selectedAreaSize: null,
@@ -73,6 +74,10 @@ class Home extends React.Component {
       hasDriverLocation: false,
       setName: null,
       showFieldLabel: true,
+      fountains: [],
+      showFountains: true,
+      selectedFountain: null,
+      showFountainWindow: true,
     };
   }
 
@@ -99,7 +104,8 @@ class Home extends React.Component {
           fields: res.fields,
           currentField: res.fields[0],
           users: res.users,
-          inboxFieldGropupIds: res.groupIds
+          inboxFieldGropupIds: res.groupIds,
+          fountains: res.fountains,
         });
       }
     )
@@ -123,7 +129,6 @@ class Home extends React.Component {
     // if (hasLocationPermission) {
       Geolocation.getCurrentPosition(
           (position) => {
-            console.log(position);
             this.setState({
               region: {
                 latitude: position.coords.latitude,
@@ -455,7 +460,14 @@ class Home extends React.Component {
     })
     this.setState({
       inboxFields: result,
+      showInboxWindow: false
     });
+
+    if (result.length > 0) {
+      this.map.animateToRegion({
+        ...result[0].coordinates[0],
+      })
+    }
   }
 
   logOut = async () => {
@@ -464,15 +476,9 @@ class Home extends React.Component {
   };
 
   toggleRoute() {
-    if (this.state.showRoute) {
-      this.setState({
-        showRoute: false,
-      })
-    } else {
-      this.setState({
-        showRoute: true,
-      })
-    }
+    let coord = this.state.selectedRegion.coordinates[0];
+    let mapURL = "http://maps.apple.com/?dirflg=d&daddr=" + coord.latitude + "," + coord.longitude;
+    Linking.openURL(mapURL);
   }
 
   removeSelectedAreaPoint() {
@@ -521,6 +527,37 @@ class Home extends React.Component {
     }
   }
 
+  toggleShowFountain() {
+    if (this.state.showFountains) {
+      this.setState({
+        showFountains: false
+      })
+    } else {
+      this.setState({
+        showFountains: true
+      })
+    }
+  }
+
+  onFountainPress(e, fountain) {
+    this.setState({
+      selectedFountain: fountain,
+      showFountainWindow: true,
+    });
+  }
+
+  closeFountainWindow() {
+    this.setState({
+      showFountainWindow: false,
+    });
+  }
+
+  clearSetFields() {
+    this.setState({
+      inboxFields: []
+    });
+  }
+
   render() {
     const { fields, fieldLoadingErrorMessage, region, initialMapRegion, measuring, hasLoadedFields, hasDriverLocation } = this.state;
 
@@ -551,11 +588,19 @@ class Home extends React.Component {
             onRegionChangeComplete={(region)=>this.onRegionChangeComplete(region)}
             {...mapOptions}
           >
-            {region.latitude && (
+            {this.state.showFountains && this.state.fountains.map((fountain) => (
               <Marker
-                coordinate={region}
-              />
-            )}
+                key={fountain.id}
+                coordinate={fountain}
+                onPress={(e) => this.onFountainPress(e, fountain)}
+              >
+                <Image
+                  source={require('../images/blur.png')}
+                  style={{ width: 30 }}
+                  resizeMode="contain"
+                />
+              </Marker>
+            ))}
             {this.state.hasDriverLocation && (
               <Marker
                 coordinate={this.state.driverLocation}
@@ -610,16 +655,6 @@ class Home extends React.Component {
                 coordinate={coordinate}
               />
             ))}
-            {this.state.selectedRegion && this.state.showRoute && (
-              <MapViewDirections
-                // origin={{latitude: 52.8246310, longitude: 8.1316168}}
-                origin={region}
-                destination={this.state.selectedRegion.coordinates[0]}
-                apikey={GOOGLE_MAPS_API_KEY}
-                strokeWidth={3}
-                strokeColor="hotpink"
-              />
-            )}
           </MapView>
           <View style={styles.buttonContainer}>
             <TouchableOpacity
@@ -634,6 +669,14 @@ class Home extends React.Component {
                 style={[styles.bubble, styles.button]}
               >
                 <Text>{this.state.grouping ? 'Satz erzeugen' : 'Satz auswählen'}</Text>
+              </TouchableOpacity>
+            )}
+            {this.state.inboxFields.length > 0 && (
+              <TouchableOpacity
+                onPress={() => this.clearSetFields()}
+                style={[styles.bubble, styles.button]}
+              >
+                <Text>Zurücksetzen</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity
@@ -658,7 +701,7 @@ class Home extends React.Component {
           {this.state.selectedRegion && this.state.showFieldWindow && (
             <View style={styles.metaInfoWindow}>
               <Button
-                title={this.state.showRoute ? 'Route ausblenden' : 'Route anzeigen'}
+                title="Route"
                 onPress={ () => this.toggleRoute() }
               />
               <View style={styles.metaMainView}>
@@ -685,6 +728,18 @@ class Home extends React.Component {
               <Button
                 title='Schließen'
                 onPress={() => this.closeFieldWindow()}
+              />
+            </View>
+          )}
+          {this.state.selectedFountain && this.state.showFountainWindow && (
+            <View style={styles.metaInfoWindow}>
+              <View style={styles.metaMainView}>
+                <Text style={styles.metaTagName}>Name: <Text style={styles.metaTagContent}>{this.state.selectedFountain.name}</Text></Text>
+                <Text style={styles.metaTagName}>Typ: <Text style={styles.metaTagContent}>{this.state.selectedFountain.color}</Text></Text>
+              </View>
+              <Button
+                title='Schließen'
+                onPress={() => this.closeFountainWindow()}
               />
             </View>
           )}
@@ -743,6 +798,12 @@ class Home extends React.Component {
             >
               <Text>Aktuelle Position</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => this.toggleShowFountain()}
+              style={[styles.bubble, styles.button]}
+            >
+              <Text>Brunnen an/aus</Text>
+            </TouchableOpacity>
             {this.state.selectedAreaSize && (
               <View>
                 <TouchableOpacity
@@ -795,10 +856,10 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
   },
   button: {
-    width: 80,
-    paddingHorizontal: 12,
+    width: 50,
+    paddingHorizontal: 2,
     alignItems: 'center',
-    marginHorizontal: 10,
+    marginHorizontal: 6,
   },
   infoButton: {
     width: 100,
