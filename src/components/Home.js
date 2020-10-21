@@ -9,7 +9,8 @@ import {
   Dimensions,
   TouchableOpacity,
   Image,
-  Linking
+  Linking,
+  AppState
 } from "react-native";
 import CheckBox from '@react-native-community/checkbox';
 import MapView, {
@@ -78,6 +79,7 @@ class Home extends React.Component {
       showFountains: true,
       selectedFountain: null,
       showFountainWindow: true,
+      appState: AppState.currentState,
     };
   }
 
@@ -126,6 +128,7 @@ class Home extends React.Component {
   componentDidMount() {
     this.loadFields();
     this.checkAdminUser();
+    AppState.addEventListener("change", this._handleAppStateChange);
     // if (hasLocationPermission) {
       Geolocation.getCurrentPosition(
           (position) => {
@@ -164,6 +167,20 @@ class Home extends React.Component {
 
     // }
   }
+
+  componentWillUnmount() {
+    AppState.removeEventListener("change", this._handleAppStateChange);
+  }
+
+  _handleAppStateChange = nextAppState => {
+    if (
+      this.state.appState.match(/inactive|background/) &&
+      nextAppState === "active"
+    ) {
+      this.loadFields();
+    }
+    this.setState({ appState: nextAppState });
+  };
 
   rad(coord) {
     return (coord * Math.PI) / 180;
